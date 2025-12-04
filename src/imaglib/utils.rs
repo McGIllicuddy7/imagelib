@@ -1,4 +1,4 @@
-use std::{collections::HashSet, ffi::c_void, sync::{Arc, Mutex, RwLock, atomic::AtomicUsize}};
+use std::{collections::HashSet, ffi::c_void, fmt::Debug, sync::{Arc, Mutex, RwLock, atomic::AtomicUsize}};
 pub static ALLOCATION_COUNT:std::sync::atomic::AtomicUsize = AtomicUsize::new(0);
 pub static FREE_COUNT:std::sync::atomic::AtomicUsize = AtomicUsize::new(0);
 #[macro_export]
@@ -201,6 +201,13 @@ impl <T:Traceable> CyclicPtr<T>{
     pub fn get(&self)->&T{
         unsafe{
             return &*self.ptr;
+        }
+    }
+}
+impl<T:Traceable+Debug> Debug for CyclicPtr<T>{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        unsafe{
+            f.debug_struct("CyclicPtr").field("ptr", &*self.ptr).finish()
         }
     }
 }
