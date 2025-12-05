@@ -1,56 +1,42 @@
+use std::thread::sleep;
+
+use crate::imaglib::{draw::{rand, srand_time}, utils::{GC, Object, debug_alloc_free_counts, gc_collect, gc_thread_end, spawn_gc_thread}};
+
 pub mod imaglib;
-use std::{collections::{HashMap, HashSet}, ffi::c_void, sync::{Mutex, RwLock}};
-
-pub use imaglib::utils::*;
-#[derive(Debug)]
-pub struct Node<T:Traceable+'static>{
-    value:T, 
-    next:Option<CyclicPtr<RwLock<Node<T>>>>, 
+#[derive(Debug,Clone)]
+pub struct Graph{
+    pub value:i32, 
+    pub connections:Vec<Object<Graph>>
 }
+make_traceable!(Graph, value, connections);
 
-make_traceble_generic!(Node,value, next);
-impl <T:Traceable+'static> Node<T>{
-    pub fn new(value:T)->Self{
-        Self { value, next: None}
+pub fn test()->Object<Graph>{
+    let mut graphs = Vec::new();
+    for i in 0..1000{
+        graphs.push(Object::new(Graph{value:i, connections:Vec::new()}));
     }
-    pub fn push(&mut self, value:Node<T>){
-        if let Some(n) = self.next.as_ref(){
-            let mut lock = n.get().write().unwrap();
-            lock.push(value);
-        }else{
-            self.next = Some(CyclicPtr::new(RwLock::new(value)));
-        }
+    for i in 0..10000{
+        let base = rand() as usize%graphs.len();
+        let second = rand() as usize%graphs.len();
+        graphs[base].get().connections.push(graphs[second].clone());
+        let tmp = Object::new(i);
+        println!("{:#?}", tmp);
     }
-    pub fn last(&self)->Option<CyclicPtr<RwLock<Node<T>>>>{
-        if let Some(n) = self.next.as_ref(){
-            let f = n.get().read().unwrap();
-            if f.next.is_some(){
-                return f.last();
-            }else{
-                return self.next.clone();
-            }
-        }else{
-            None
-        }
-    }
+    return graphs[0].clone();
+  
 }
-pub fn debug(){
-    let l = {    
-        let list = CyclicPtr::new(RwLock::new(Node::new(10)));
-        let mut lock = list.get().write().unwrap();
-        for i in 0..32{
-            lock.push(Node::new(i));
+pub fn main(){
+    spawn_gc_thread();
+    srand_time();
+    {
+        let s = test();
+        for i in &s.get().connections{
+            println!("{:#?}",i.get().value);
         }
-        println!("done\n");
-        drop(lock);
-        let f = list.get().read().unwrap().last().unwrap();
-        f.get().write().unwrap().next = Some(list.clone());
-        list.clone()
-    };
-
-    println!("testing 4,5,6");
-}
-fn main() {
-    debug();
-    debug_allocations();
+        println!("done");
+        debug_alloc_free_counts();
+    }
+    sleep(std::time::Duration::from_millis(500));
+    gc_thread_end();
+    debug_alloc_free_counts();
 }
