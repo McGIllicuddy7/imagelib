@@ -53,8 +53,8 @@ macro_rules! throw {
     ($v:expr) => {
         {   
             let trace = std::backtrace::Backtrace::capture();
-            return Err(crate::imaglib::utils::Exception{error:Box::new($v.into()), trace
-            })
+            return Err(crate::imaglib::utils::Exception{error:$v.into(), trace
+            }.into());
         }
     };
 }
