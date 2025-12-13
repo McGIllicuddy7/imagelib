@@ -7,7 +7,7 @@ pub mod imaglib;
 pub fn main(){
     try_catch!(
         {
-            throw!("testing 123");
+            throw!(format!("{:#?}",42));
         } catch (err) {
             println!("{:#?}",err);
         }

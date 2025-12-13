@@ -1,4 +1,4 @@
-use std::{backtrace::Backtrace, error::Error, fmt::Display};
+use std::{backtrace::Backtrace, error::Error, fmt::Display, sync::Mutex};
 
 pub type Throwable<T> = Result<T, Box<dyn Error>>;
 pub trait Throws<T:Sized> where Self:Sized{

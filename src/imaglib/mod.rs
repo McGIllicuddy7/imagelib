@@ -3,3 +3,4 @@ pub mod letters;
 pub mod math;
 pub mod utils;
 pub use utils::*;
+pub mod gui;
