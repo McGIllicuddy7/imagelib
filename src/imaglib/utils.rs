@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{backtrace::Backtrace, error::Error, fmt::Display};
 
 pub type Throwable<T> = Result<T, Box<dyn Error>>;
 pub trait Throws<T:Sized> where Self:Sized{
@@ -37,9 +37,24 @@ macro_rules! try_catch {
         if let Err(_) = ((|| {$to_try Ok::<(), Box<dyn std::error::Error>>(())})()) $caught
     };
 }
+#[derive(Debug)]
+pub struct Exception{
+    pub error:Box<dyn Error>,
+    pub trace:Backtrace,
+}
+impl Display for Exception{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#?}", self)
+    }
+}
+impl Error for Exception{}
 #[macro_export]
 macro_rules! throw {
     ($v:expr) => {
-        {return Err($v.into())}
+        {   
+            let trace = std::backtrace::Backtrace::capture();
+            return Err(crate::imaglib::utils::Exception{error:Box::new($v.into()), trace
+            })
+        }
     };
 }
