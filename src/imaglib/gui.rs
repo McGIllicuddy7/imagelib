@@ -297,6 +297,15 @@ impl Gui{
     }
     pub fn update(&mut self)->Throwable<()>{ 
         self.update_layout()?;
+        for i in &self.widgets.clone(){
+            let Ok(mut i0) = i.1.lock()else {
+                continue;   
+            };
+            let inputs = GuiEvent::Nothing;
+            if let Some(to_run) = i0.on_update.clone(){
+                (*to_run)(self, &mut i0, inputs);
+            }
+        }
         Ok(())
     }
     pub fn update_layout(&mut self)->Throwable<()>{
