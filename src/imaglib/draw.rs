@@ -317,7 +317,7 @@ impl Image {
             }
         }
     }
-    pub fn text_bounds(&self, height:i32,w:i32 ,text:&str)->(i32, i32){
+    pub fn text_bounds(height:i32,w:i32 ,text:&str)->(i32, i32){
         let sf = height as f64/TEXT_HEIGHT as f64;
         let xoff = (TEXT_SPACE as f64*sf)as i32;
         let yoff = (TEXT_SPACE_V as f64 *sf ) as i32;
@@ -345,10 +345,10 @@ impl Image {
     }
     pub fn draw_text_box(&mut self,x:i32, y:i32, w:i32, h:i32, text:&str, color: Color){
             let mut hp = 100;
-            let ( _, mut by) = self.text_bounds(hp, w,text);
+            let ( _, mut by) =Self::text_bounds(hp, w,text);
             while by+2>=h{
                 hp -=1;
-                (_, by) = self.text_bounds(hp, w-2,text);
+                (_, by) =Self::text_bounds(hp, w-2,text);
                 //println!("{},{}", bx,by)
             }
           //  println!("{hp}");

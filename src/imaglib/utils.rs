@@ -1,4 +1,4 @@
-use std::{backtrace::Backtrace, error::Error, fmt::Display, sync::Mutex};
+use std::{backtrace::Backtrace, error::Error, fmt::Display, sync::{LockResult, Mutex, MutexGuard}};
 
 pub type Throwable<T> = Result<T, Box<dyn Error>>;
 pub trait Throws<T:Sized> where Self:Sized{
@@ -14,8 +14,8 @@ impl<T> Throws<T> for Option<T>{
         }
     }
 }
-impl<T,E:Error> Throws<T> for Result<T, E>  where Self:Into<Result<T, Box<dyn Error>>>{
 
+impl<T,E:Error> Throws<T> for Result<T, E>  where Self:Into<Result<T, Box<dyn Error>>>{
     fn throw(self)->Throwable<T> {
         self.into()
     }
