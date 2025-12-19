@@ -1,6 +1,6 @@
 use std::{collections::HashMap, error::Error, ops::{Deref, DerefMut}, sync::{Arc, Mutex, MutexGuard, Weak}};
 
-use crate::{imaglib::{Throwable, Throws, draw::{H, Image, colors::{self, GREY}}}, throw};
+use crate::{imaglib::{Throwable, Throws, draw::{H, Image, colors::{self, BLACK, GREY, WHITE}}}, throw};
 #[derive(Clone,Debug)]
 pub enum WidgetType{
     None, Button, Text, Div, TextInput,Image,
@@ -109,7 +109,7 @@ impl Widget{
         gui.widgets.insert(name, v);
         Ok(wid)
     }
-    pub fn div(&self,gui:&mut Gui, w:i32, h:i32, vertical:bool, name:String)->Throwable<Widget>{
+    pub fn div_sized(&self,gui:&mut Gui, w:i32, h:i32, vertical:bool, name:String)->Throwable<Widget>{
         let w = WidgetData{
             w_type:WidgetType::Div, vertical, x:0, y:0, w, h, h_padding:4, w_padding:4, text_height:12, children:Vec::new(), text:String::new(), name:name.clone(), on_update:None
         };
@@ -119,6 +119,9 @@ impl Widget{
         s.children.push(wid.clone());
         gui.widgets.insert(name, v);
         Ok(wid)
+    }
+    pub fn div(&self,gui:&mut Gui, vertical:bool, name:String)->Throwable<Widget>{
+        self.div_sized(gui,0,0, vertical, name)
     }
     pub fn attach_text_input<T:Fn(&mut Gui, &mut WidgetData, GuiEvent)+'static>(&self, gui:&mut Gui,on_update:T, name:String)->Throwable<Widget>{
         let w = WidgetData{
@@ -173,32 +176,37 @@ impl WidgetData{
         if self.children.len() == 0{
             return Ok(());
         }
-        let mut x = self.x+self.w_padding;
-        let mut y = self.y + self.h_padding;
-        let mut w = 0;
-        let mut h = 0;
+        let mut x = self.x+self.w_padding*2;
+        let mut y = self.y + self.h_padding*2;
+        let mut w = self.w_padding;
+        let mut h = self.h_padding;
         for i in &self.children{
             let b = i.get_bounds_min(bounds);
             if self.vertical{
-                h+= b.h;
-                if b.w>w{
+                h+= b.h+self.h_padding;
+                if b.w+self.w_padding>w{
                     w = b.w;
                 }
             }else{
-                w += b.w;
-                if b.h>h{
-                    h = b.h;
+                w += b.w+self.w_padding;
+                if b.h+self.text_height>h{
+                    h = b.h+self.h_padding;
                 }
             }
         }
-        let dx = (self.w-w)/(self.children.len() as i32);
-        let dy = (self.h - h)/(self.children.len() as i32);
+        let dx = if self.vertical{self.w - 2*self.w_padding} else{(self.w-w)/(self.children.len() as i32+1)};
+        let dy = if !self.vertical{self.h - 2*self.h_padding} else{(self.h-h)/(self.children.len() as i32+1)};
+        if self.vertical{
+            y += dy/8;
+        }else{
+            x += dx/8;
+        }
         for i in &self.children{
             let b0 = i.get_bounds_min(bounds);
-            let b =  Bounds{x, y, w:b0.w + dx-self.w_padding, h:b0.h+dy-self.h_padding};
+            let b =  Bounds{x, y, w:b0.w + dx-self.w_padding*2, h:b0.h+dy-self.h_padding*2};
             i.update_layout(b)?;
             if self.vertical{
-                y += b0.h+dy + self.h_padding*2;
+                y += b0.h+dy + self.h_padding;
             }else{
                 x += b0.w+dx + self.w_padding;
             }    
@@ -210,7 +218,8 @@ impl WidgetData{
             WidgetType::None => Bounds { x: 0, y: 0, w: 0, h: 0 },
             WidgetType::Button => Bounds { x: 0, y: 0, w: 10, h: 10 },
             WidgetType::Text => {
-                let p  = super::draw::Image::text_bounds(self.text_height, max_bounds.w, &self.text);
+                let p  = super::draw::Image::text_bounds_conservative(self.text_height, max_bounds.w, &self.text);
+
                 Bounds{x:0, y:0, w:p.0, h:p.1}
             },
             WidgetType::Div => {
@@ -262,16 +271,19 @@ impl WidgetData{
 
             }
             WidgetType::Button => {
-
+              
+                target.draw_rect_lines(self.x, self.y,self.w, self.h,1.0, BLACK);
             }
             WidgetType::Text => {
+               // target.draw_rect_lines(self.x, self.y, self.w, self.h,1.0, BLACK);
                 target.draw_text_box(self.x, self.y, self.w, self.h, &self.text, colors::BLACK);
             }
             WidgetType::Div => {
-                target.draw_rect(self.x, self.y,self.w, self.h,GREY);
+                target.draw_rect(self.x, self.y, self.w, self.h, WHITE);
+                target.draw_rect_lines(self.x, self.y,self.w, self.h,1.0, BLACK);
             }
             WidgetType::TextInput => {
-                target.draw_text_box(self.x, self.y, self.w, self.h, &self.text, colors::BLACK);
+                target.draw_text_box_conservative(self.x, self.y, self.w, self.h, &self.text, colors::BLACK);
             }
             WidgetType::Image => {
                 target.draw_rect_image(self.x, self.y, self.w, self.h, &images[&self.text]);

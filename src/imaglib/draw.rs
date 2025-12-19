@@ -242,7 +242,7 @@ impl Image {
         let mut out = Self::new(h,w);
         for yp in 0..h{
             for x in 0..w{
-                let y = h-yp-1;
+                let y = yp;
                 let ct = ig[yp][x];
                 let col = Color{r:ct.r, g:ct.g, b:ct.b, a:ct.a};
                 out.draw_pixel(x, y, col);
@@ -318,41 +318,62 @@ impl Image {
         }
     }
     pub fn text_bounds(height:i32,w:i32 ,text:&str)->(i32, i32){
+        let max_width = w;
         let sf = height as f64/TEXT_HEIGHT as f64;
+        let x =0;
+        let y = 0;
+        let mut max_cx = 0;
         let xoff = (TEXT_SPACE as f64*sf)as i32;
         let yoff = (TEXT_SPACE_V as f64 *sf ) as i32;
-        let mut cx = 0;
-        let mut cy = 0;
-        let mut max_cx = 0;
+        let mut cx = x;
+        let mut cy = y;
         for i in text.chars(){
-            if i == '\n' || cx+xoff>=w{
+            if i == '\n' || cx-x+xoff>=max_width{
                 cy += yoff;
-                if cx>max_cx{
-                    max_cx = cx;
-                }
-                cx = 0;
+                cx = x;
             }else if i == '\t'{
                 cx += xoff*3;
-            }else{
-                cx += xoff
-
             }
-        }
-        if cx>max_cx{
-            max_cx = cx;
+            if i != '\n' && i != '\t'{
+                cx += xoff
+            }
+            if cx>max_cx{
+                max_cx = cx;
+            }
         }
         (max_cx+xoff, cy+yoff)
     }
+    pub fn text_bounds_conservative(height:i32,w:i32 ,text:&str)->(i32, i32, i32){
+        let hc = text.chars().filter(|p| *p == '\n').count() as i32;
+        let mut bounds = Image::text_bounds(height, w, text);
+        let mut h = height;
+        while bounds.1/h >hc&& h>=12{
+            h -= 1;
+            bounds = Image::text_bounds(h, w, text);
+        }
+        (bounds.0, bounds.1, h)
+    }
     pub fn draw_text_box(&mut self,x:i32, y:i32, w:i32, h:i32, text:&str, color: Color){
             let mut hp = 100;
-            let ( _, mut by) =Self::text_bounds(hp, w,text);
-            while by+2>=h{
+            let ( _, mut by) =Self::text_bounds(hp, w-2, text);
+            while by+2>=h {
                 hp -=1;
-                (_, by) =Self::text_bounds(hp, w-2,text);
+                (_, by) =Self::text_bounds(hp, w,text);
                 //println!("{},{}", bx,by)
             }
           //  println!("{hp}");
-            self.draw_text_width(x, y, w ,hp, text, color);
+            self.draw_text_width(x, y, w-2 ,hp, text, color);
+    }
+    pub fn draw_text_box_conservative(&mut self,x:i32, y:i32, w:i32, h:i32, text:&str, color: Color){
+            let mut hp = 100;
+            let ( _, mut by, fs) =Self::text_bounds_conservative(hp, w-2, text);
+            while by+2>=h {
+                hp -=1;
+                (_, by,_) =Self::text_bounds_conservative(fs, w,text);
+                //println!("{},{}", bx,by)
+            }
+          //  println!("{hp}");
+            self.draw_text_width(x, y, w-2 ,hp, text, color);
     }
     pub fn draw_line(&mut self, start:Vec2, end:Vec2, w:f32, color:Color){
         let b = BB::from_points(&[start, end]);
@@ -374,6 +395,16 @@ impl Image {
                 }
             }
         }
+    }
+    pub fn draw_rect_lines(&mut self, x:i32, y:i32, w:i32, h:i32,width:f32, color:Color){
+        let p1 = Vec2::new(x, y);
+        let p2 = Vec2::new(x+w, y);
+        let p3 = Vec2::new(x, y+h);
+        let p4 = Vec2::new(x+w, y+h);
+        self.draw_line(p1, p2, width, color);
+        self.draw_line(p1, p3, width, color);
+        self.draw_line(p4, p2, width, color);
+        self.draw_line(p4, p3, width, color);
     }
     pub fn draw_vec2r(&mut self,location:Vec2, v:Vec2r, w:f32,s:f32,color: Color){
         let e= location.to_real()+v*s;
