@@ -343,33 +343,13 @@ impl Image {
         }
         (max_cx+xoff, cy+yoff)
     }
-    pub fn text_bounds_conservative(height:i32,w:i32 ,text:&str)->(i32, i32, i32){
-        let hc = text.chars().filter(|p| *p == '\n').count() as i32;
-        let mut bounds = Image::text_bounds(height, w, text);
-        let mut h = height;
-        while bounds.1/h >hc&& h>=12{
-            h -= 1;
-            bounds = Image::text_bounds(h, w, text);
-        }
-        (bounds.0, bounds.1, h)
-    }
+
     pub fn draw_text_box(&mut self,x:i32, y:i32, w:i32, h:i32, text:&str, color: Color){
             let mut hp = 100;
             let ( _, mut by) =Self::text_bounds(hp, w-2, text);
             while by+2>=h {
                 hp -=1;
                 (_, by) =Self::text_bounds(hp, w,text);
-                //println!("{},{}", bx,by)
-            }
-          //  println!("{hp}");
-            self.draw_text_width(x, y, w-2 ,hp, text, color);
-    }
-    pub fn draw_text_box_conservative(&mut self,x:i32, y:i32, w:i32, h:i32, text:&str, color: Color){
-            let mut hp = 100;
-            let ( _, mut by, fs) =Self::text_bounds_conservative(hp, w-2, text);
-            while by+2>=h {
-                hp -=1;
-                (_, by,_) =Self::text_bounds_conservative(fs, w,text);
                 //println!("{},{}", bx,by)
             }
           //  println!("{hp}");

@@ -218,7 +218,7 @@ impl WidgetData{
             WidgetType::None => Bounds { x: 0, y: 0, w: 0, h: 0 },
             WidgetType::Button => Bounds { x: 0, y: 0, w: 10, h: 10 },
             WidgetType::Text => {
-                let p  = super::draw::Image::text_bounds_conservative(self.text_height, max_bounds.w, &self.text);
+                let p  = super::draw::Image::text_bounds(self.text_height, max_bounds.w, &self.text);
 
                 Bounds{x:0, y:0, w:p.0, h:p.1}
             },
@@ -283,7 +283,7 @@ impl WidgetData{
                 target.draw_rect_lines(self.x, self.y,self.w, self.h,1.0, BLACK);
             }
             WidgetType::TextInput => {
-                target.draw_text_box_conservative(self.x, self.y, self.w, self.h, &self.text, colors::BLACK);
+                target.draw_text_box(self.x, self.y, self.w, self.h, &self.text, colors::BLACK);
             }
             WidgetType::Image => {
                 target.draw_rect_image(self.x, self.y, self.w, self.h, &images[&self.text]);
